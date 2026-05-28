@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>일정성분비의 법칙 - 우주 슈팅 챌린지</title>
+    <!-- Tailwind CSS & FontAwesome Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@300;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #03000a;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+        .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* 16:9 Aspect Ratio Lock for Pad layout */
+        #game-container {
+            aspect-ratio: 16 / 9;
+            width: 100vw;
+            max-width: 1200px;
+            max-height: 675px;
+            position: relative;
+            box-shadow: 0 0 50px rgba(139, 92, 246, 0.3);
+            border: 2px solid rgba(139, 92, 246, 0.2);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        /* Custom Glowing Scrollbar & effects */
+        .glow-text {
+            text-shadow: 0 0 10px rgba(139, 92, 246, 0.8), 0 0 20px rgba(139, 92, 246, 0.4);
+        }
+        .glow-red {
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+        }
+        .glow-green {
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+        }
+        /* Custom scrollbar for report card */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.4);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center p-2 sm:p-4">
+
+    <!-- Main Game Container -->
+    <div id="game-container" class="bg-black flex flex-col justify-between select-none">
+        
+        <!-- UI Header (Always Visible in gameplay) -->
+        <div id="gameplay-header" class="absolute top-4 left-4 right-4 flex justify-between items-start z-20 pointer-events-none hidden">
+            <!-- Left: Current Stage Info -->
+            <div class="bg-black/60 backdrop-blur-md border border-purple-500/30 px-4 py-2 rounded-xl text-white">
+                <div class="text-xs text-purple-400 font-bold uppercase tracking-wider">Mission Target</div>
+                <div id="stage-display" class="text-lg font-bold">물약 탐색 중...</div>
+            </div>
+            
+            <!-- Right: Stats Panel -->
+            <div class="bg-black/60 backdrop-blur-md border border-purple-500/30 px-4 py-2 rounded-xl text-right text-white min-w-[160px]">
+                <div class="flex justify-between items-center gap-4">
+                    <span class="text-xs text-gray-400 font-bold">SCORE</span>
+                    <span id="score-display" class="orbitron text-xl font-black text-purple-400 glow-text">0</span>
+                </div>
+                <div class="flex justify-between items-center gap-4 mt-1">
+                    <span class="text-xs text-gray-400 font-bold">TIME</span>
+                    <span id="time-display" class="orbitron text-lg font-bold text-green-400">00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Damage Flash Screen Overlay -->
+        <div id="damage-flash" class="absolute inset-0 bg-red-600/30 opacity-0 pointer-events-none transition-opacity duration-100 z-10"></div>
+
+        <!-- Game Canvas for Shooter -->
+        <canvas id="shooterCanvas" class="w-full h-full block"></canvas>
+
+        <!-- STEP 0: PRE-STUDY TUTORIAL SCREEN (일정 성분비의 법칙 사전 안내) -->
+        <div id="pre-study-screen" class="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950/80 to-indigo-950 flex flex-col items-center justify-center p-6 z-35">
+            <div class="bg-black/85 backdrop-blur-md border border-purple-500/40 p-6 sm:p-8 rounded-2xl max-w-3xl w-full text-white shadow-2xl overflow-y-auto max-h-[90%]">
+                <div class="text-center mb-6">
+                    <span class="px-3 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-purple-300 text-xs font-bold uppercase tracking-wider">
+                        미션 수행 전 복습하기
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-300 mt-2">
+                        혜원쌤과 함께 하는:일정성분비의 법칙
+                    </h2>
+                </div>
+
+                <div class="space-y-4 text-sm leading-relaxed text-gray-300">
+                    <div class="bg-white/5 border border-white/10 p-4 rounded-xl">
+                        <h4 class="font-bold text-purple-300 mb-1 flex items-center gap-2 text-base">
+                            <i class="fa-solid fa-atom"></i> 일정성분비의 법칙이란?
+                        </h4>
+                        <p>
+                            두 가지 이상의 원소가 만나 한 화합물을 이룰 때, 그 화합물을 구성하는 성분 원소들 사이에는 <strong>항상 일정한 질량 비율</strong>이 성립한다는 법칙입니다. (1799년, 프랑스 화학자 프루스트 제안)
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white/5 border border-white/10 p-4 rounded-xl">
+                            <h4 class="font-bold text-yellow-400 mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-scale-balanced"></i> 핵심 화학 원자량 정보
+                            </h4>
+                            <ul class="space-y-1.5 orbitron text-xs">
+                                <li class="flex justify-between border-b border-white/5 pb-1">
+                                    <span class="text-gray-400 font-sans">수소 (H)</span> <span class="text-white font-bold">1</span>
+                                </li>
+                                <li class="flex justify-between border-b border-white/5 pb-1">
+                                    <span class="text-gray-400 font-sans">탄소 (C)</span> <span class="text-white font-bold">12</span>
+                                </li>
+                                <li class="flex justify-between border-b border-white/5 pb-1">
+                                    <span class="text-gray-400 font-sans">질소 (N)</span> <span class="text-white font-bold">14</span>
+                                </li>
+                                <li class="flex justify-between">
+                                    <span class="text-gray-400 font-sans">산소 (O)</span> <span class="text-white font-bold">16</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col justify-center">
+                            <h4 class="font-bold text-cyan-400 mb-1 flex items-center gap-2">
+                                <i class="fa-solid fa-calculator"></i> 성분 계산 팁
+                            </h4>
+                            <p class="text-xs">
+                                성분 원소의 질량 비율은 <strong>(원자량 × 원자 개수)</strong>의 곱으로 구한 뒤, 가장 간단한 정수비로 약분하여 대입해야 정답으로 인정됩니다.<br>
+                                <span class="text-purple-300">예시 - 물(H₂O): (1×2) : (16×1) = 2 : 16 = <strong>1 : 8</strong></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-6">
+                    <button id="btn-pre-accept" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg transform hover:scale-105 active:scale-95 flex items-center gap-2 mx-auto">
+                        <i class="fa-solid fa-square-check"></i> 혜원쌤! 전부 이해 했습니다❤️
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- START SCREEN OVERLAY -->
+        <div id="start-screen" class="absolute inset-0 bg-gradient-to-tr from-black via-slate-950 to-indigo-950/80 flex flex-col items-center justify-center p-6 z-30 hidden">
+            <div class="text-center max-w-2xl">
+                <div class="inline-block px-3 py-1 bg-purple-500/20 border border-purple-500/40 rounded-full text-purple-300 text-xs font-bold mb-4 uppercase tracking-widest animate-pulse">
+                    Middle School 3rd Grade Science
+                </div>
+                <h1 class="orbitron text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 mb-2 tracking-tight">
+                    DEFINITE PROPORTIONS
+                </h1>
+                <p class="text-gray-300 text-sm sm:text-base mb-8 font-medium">
+                    우주선을 조종하여 소행성을 피하고, <span class="text-yellow-400 font-bold">회복 물약</span>을 획득하여<br>
+                    <span class="text-purple-300 font-bold">일정성분비의 법칙</span> 과학 퀴즈를 풀고 고득점을 획득하세요!
+                </p>
+
+                <!-- How to play cards -->
+                <div class="grid grid-cols-3 gap-3 mb-8 text-left text-xs text-gray-400">
+                    <div class="bg-white/5 border border-white/10 p-3 rounded-lg">
+                        <div class="text-purple-400 font-bold mb-1"><i class="fa-solid fa-gamepad mr-1"></i> 조작법</div>
+                        화면 드래그, 마우스, 방향키로 이동. 자동 사격 발사!
+                    </div>
+                    <div class="bg-white/5 border border-white/10 p-3 rounded-lg">
+                        <div class="text-red-400 font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 장애물 부딪힘</div>
+                        소형 다이아 <span class="text-red-400 font-bold">-5점</span><br>대형 사각형 <span class="text-red-400 font-bold">-10점</span>
+                    </div>
+                    <div class="bg-white/5 border border-white/10 p-3 rounded-lg">
+                        <div class="text-green-400 font-bold mb-1"><i class="fa-solid fa-flask mr-1"></i> 장애물 격파 및 가속</div>
+                        격파 시 포인트 추가.<br>미션을 하나씩 깰수록 <span class="text-red-400 font-bold font-bold">비행 속도가 가속</span>됩니다!
+                    </div>
+                </div>
+
+                <button id="btn-start" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-lg rounded-xl shadow-lg shadow-purple-500/30 transition-all transform hover:scale-105 active:scale-95">
+                    최고점 도전하기 <i class="fa-solid fa-rocket ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- GAME OVER / CLEAR SCREEN OVERLAY WITH INCORRECT PROBLEMS SUMMARY -->
+        <div id="end-screen" class="absolute inset-0 bg-black/95 backdrop-blur-lg flex flex-col items-center justify-center p-4 sm:p-6 z-30 hidden overflow-hidden">
+            <div class="text-center w-full max-w-3xl flex flex-col justify-between h-full">
+                
+                <div class="mt-4">
+                    <div id="end-title" class="orbitron text-3xl sm:text-4xl font-black mb-1 text-transparent bg-clip-text">MISSION COMPLETE</div>
+                    <p id="end-subtitle" class="text-gray-400 text-xs sm:text-sm">훌륭하게 우주 항해와 일정성분비의 법칙 퀴즈를 모두 수행했습니다!</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 my-3 items-stretch overflow-hidden flex-1">
+                    <!-- Left: Score board -->
+                    <div class="md:col-span-4 bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col justify-around text-center">
+                        <div>
+                            <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">FINAL SCORE</div>
+                            <div id="final-score" class="orbitron text-4xl sm:text-5xl font-black text-yellow-400 glow-text">150</div>
+                        </div>
+                        
+                        <div class="space-y-2 text-left text-xs text-gray-300 border-t border-white/10 pt-4">
+                            <div><i class="fa-regular fa-clock text-green-400 mr-2"></i> 총 시간: <span id="final-time" class="font-bold text-white">02:30</span></div>
+                            <div><i class="fa-solid fa-skull-crossbones text-red-400 mr-2"></i> 함선 충돌: <span id="final-collisions" class="font-bold text-white">4회</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Incorrect Problem Summary Card -->
+                    <div class="md:col-span-8 bg-purple-950/15 border border-purple-500/20 p-4 rounded-xl flex flex-col text-left overflow-hidden">
+                        <h4 class="font-bold text-purple-300 text-sm mb-2 flex items-center gap-2 border-b border-purple-500/20 pb-1.5 shrink-0">
+                            <i class="fa-solid fa-square-poll-vertical"></i> 개인 피드백 리포트
+                        </h4>
+                        
+                        <!-- Scrollable log -->
+                        <div id="incorrect-log-container" class="flex-1 overflow-y-auto custom-scroll space-y-2 text-xs text-gray-300 pr-1">
+                            <!-- Dynamically populated with incorrect question logs -->
+                        </div>
+
+                        <!-- General AI study guidelines -->
+                        <div id="ai-study-recommendation" class="mt-3 bg-indigo-950/40 p-2.5 rounded-lg border border-indigo-500/20 text-[11px] text-gray-400 shrink-0 leading-relaxed">
+                            <!-- Dynamic summary recommendation -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 shrink-0">
+                    <button id="btn-restart" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 text-sm">
+                        다시 도전하기 <i class="fa-solid fa-arrows-rotate ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUIZ & ASSEMBLY MODAL OVERLAY -->
+        <div id="quiz-modal" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col justify-between p-6 z-40 hidden border border-purple-500/30 rounded-2xl">
+            
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center border-b border-purple-500/20 pb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-lg border border-purple-500/30">
+                        <i class="fa-solid fa-flask-vial animate-bounce"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs text-purple-400 font-bold uppercase tracking-widest" id="quiz-compound-formula">H₂O</span>
+                        <h2 class="text-lg font-black text-white" id="quiz-compound-name">물 분자 문제 도전하기</h2>
+                    </div>
+                </div>
+                <div class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300">
+                    획득 가능 점수: <span id="quiz-potential-score" class="text-yellow-400 font-bold">30점</span>
+                </div>
+            </div>
+
+            <!-- STEP 1: THEORY QUESTIONS -->
+            <div id="quiz-step-1" class="flex-1 flex flex-col justify-center py-4 my-auto">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    
+                    <!-- Left: Random atom pool card -->
+                    <div class="md:col-span-5 bg-purple-950/20 border border-purple-500/20 rounded-2xl p-4 flex flex-col justify-between h-full min-h-[180px]">
+                        <div>
+                            <span class="text-xs text-purple-400 font-bold tracking-widest uppercase">Atom Inventory</span>
+                            <h3 class="text-sm font-bold text-white mt-1">실험실에 준비된 무작위 원자</h3>
+                            <p class="text-xs text-gray-400 mt-1">주어진 한정된 재료로 최대로 완성할 수 있는 온전한 분자 개수를 구해야 합니다.</p>
+                        </div>
+                        <div class="flex justify-around items-center my-4" id="atom-inventory-display">
+                            <!-- Dynamically generated atoms with counts -->
+                        </div>
+                        <div class="text-[11px] text-gray-500 text-center">원자량 정보: H=1, C=12, N=14, O=16</div>
+                    </div>
+
+                    <!-- Right: The 3 Questions -->
+                    <div class="md:col-span-7 space-y-4">
+                        <!-- Warning/Alert Message Container -->
+                        <div id="validation-warning" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-500/30 px-3 py-2 rounded-lg font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i> <span id="warning-message-text">모든 질문에 답을 채워 넣어야 제출할 수 있습니다!</span>
+                        </div>
+
+                        <!-- Q1: Max Molecules -->
+                        <div class="bg-white/5 border border-white/10 p-3 rounded-xl flex flex-col gap-1.5">
+                            <label class="text-xs font-bold text-purple-300 flex justify-between">
+                                <span>Q1. 최대로 생성 가능한 완벽한 분자 수?</span>
+                                <span class="text-[10px] text-gray-400 font-normal">남는 원자는 제외</span>
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="number" id="ans-q1" class="bg-black/40 border border-purple-500/20 rounded-lg px-3 py-1 text-white text-sm focus:outline-none focus:border-purple-500 w-full orbitron" placeholder="숫자 입력">
+                                <div id="feedback-q1" class="text-xs font-bold flex items-center min-w-[70px]"></div>
+                            </div>
+                        </div>
+
+                        <!-- Q2: Atomic ratio (COLON FIXED) -->
+                        <div class="bg-white/5 border border-white/10 p-3 rounded-xl flex flex-col gap-1.5">
+                            <label class="text-xs font-bold text-purple-300 flex justify-between">
+                                <span id="lbl-q2">Q2. 화합물을 구성하는 원자 수 비율 (X:Y)?</span>
+                                <span class="text-[10px] text-yellow-400 font-bold">★ 가장 간단한 정수비로 기입</span>
+                            </label>
+                            <div class="flex gap-2 items-center">
+                                <div class="flex items-center gap-2 bg-black/40 border border-purple-500/20 rounded-lg px-3 py-1 w-full justify-center">
+                                    <input type="number" id="ans-q2-1" class="bg-transparent text-center text-white text-sm focus:outline-none w-16 orbitron" placeholder="앞자리">
+                                    <span class="text-purple-400 font-bold px-1">:</span>
+                                    <input type="number" id="ans-q2-2" class="bg-transparent text-center text-white text-sm focus:outline-none w-16 orbitron" placeholder="뒷자리">
+                                </div>
+                                <div id="feedback-q2" class="text-xs font-bold flex items-center min-w-[70px]"></div>
+                            </div>
+                        </div>
+
+                        <!-- Q3: Mass ratio (COLON FIXED) -->
+                        <div class="bg-white/5 border border-white/10 p-3 rounded-xl flex flex-col gap-1.5">
+                            <label class="text-xs font-bold text-purple-300 flex justify-between">
+                                <span id="lbl-q3">Q3. 화합물을 구성하는 성분 원소의 질량비 (X:Y)?</span>
+                                <span class="text-[10px] text-yellow-400 font-bold">★ 가장 간단한 정수비로 기입</span>
+                            </label>
+                            <div class="flex gap-2 items-center">
+                                <div class="flex items-center gap-2 bg-black/40 border border-purple-500/20 rounded-lg px-3 py-1 w-full justify-center">
+                                    <input type="number" id="ans-q3-1" class="bg-transparent text-center text-white text-sm focus:outline-none w-16 orbitron" placeholder="앞자리">
+                                    <span class="text-purple-400 font-bold px-1">:</span>
+                                    <input type="number" id="ans-q3-2" class="bg-transparent text-center text-white text-sm focus:outline-none w-16 orbitron" placeholder="뒷자리">
+                                </div>
+                                <div id="feedback-q3" class="text-xs font-bold flex items-center min-w-[70px]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: MOLECULE BUILDER (DRAG & DROP CANVAS + LIVE METRICS SIDEBAR) -->
+            <div id="quiz-step-2" class="flex-1 flex flex-col justify-center hidden">
+                <div class="text-center mb-2">
+                    <span class="text-xs text-yellow-400 font-bold bg-yellow-500/10 px-3 py-1 border border-yellow-500/20 rounded-full">
+                        <i class="fa-solid fa-hand-pointer mr-1 animate-pulse"></i> 원자들을 드래그해서 원하는 위치에 <span class="text-white underline">놓으면(Release)</span> 분자로 결합합니다!
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <!-- Left: Interactive Sandbox Canvas -->
+                    <div class="md:col-span-8 relative w-full h-[220px] bg-slate-900 border border-purple-500/30 rounded-xl overflow-hidden">
+                        <canvas id="assemblyCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+                        <div class="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded text-[10px] text-gray-400 font-medium">
+                            원소 기호 아래 점 개수: 남은 결합 가용성 (가까이 두고 마우스를 놓으면 결합선이 생깁니다)
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Molecular Telemeter Panel -->
+                    <div class="md:col-span-4 bg-purple-950/20 border border-purple-500/30 rounded-xl p-3 flex flex-col justify-between">
+                        <div>
+                            <span class="text-[10px] text-purple-400 font-bold uppercase tracking-widest block mb-2"><i class="fa-solid fa-microscope mr-1"></i> 실시간 결합 분석 대시보드</span>
+                        </div>
+                        <div class="space-y-3">
+                            <!-- Live Molecules Count -->
+                            <div class="bg-black/40 border border-white/5 p-2 rounded-lg">
+                                <div class="text-[11px] text-gray-400">오른쪽 생성된 분자 수</div>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span id="live-molecules" class="orbitron text-xl font-black text-green-400 glow-green">0</span>
+                                    <span class="text-xs text-gray-400">개 완성됨</span>
+                                </div>
+                            </div>
+                            <!-- Live Atom Ratio -->
+                            <div class="bg-black/40 border border-white/5 p-2 rounded-lg">
+                                <div class="text-[11px] text-gray-400" id="lbl-live-atom-ratio">결합된 원소들의 개수비</div>
+                                <div id="live-atom-ratio" class="orbitron text-base font-bold text-yellow-400">0 : 0</div>
+                            </div>
+                            <!-- Live Mass Ratio -->
+                            <div class="bg-black/40 border border-white/5 p-2 rounded-lg">
+                                <div class="text-[11px] text-gray-400" id="lbl-live-mass-ratio">결합된 성분의 질량비</div>
+                                <div id="live-mass-ratio" class="orbitron text-base font-bold text-cyan-400">0 : 0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: SCIENTIFIC EXPLANATION -->
+            <div id="quiz-step-3" class="flex-1 flex flex-col justify-center hidden bg-purple-950/10 border border-purple-500/20 rounded-xl p-4 my-2 overflow-y-auto max-h-[250px]">
+                <h3 class="text-base font-bold text-purple-300 mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info"></i> 일정성분비의 법칙 (Law of Definite Proportions)
+                </h3>
+                <p id="explanation-text" class="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                    <!-- Scientific details will dynamically populate here -->
+                </p>
+                <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                    <div class="bg-black/40 p-2 rounded-lg border border-white/5">
+                        <div class="text-gray-400">화합물</div>
+                        <div id="exp-compound" class="font-bold text-white mt-1">H₂O</div>
+                    </div>
+                    <div class="bg-black/40 p-2 rounded-lg border border-white/5">
+                        <div class="text-gray-400">개수비</div>
+                        <div id="exp-atom-ratio" class="font-bold text-white mt-1">수소:산소 = 2:1</div>
+                    </div>
+                    <div class="bg-black/40 p-2 rounded-lg border border-white/5">
+                        <div class="text-gray-400">질량비</div>
+                        <div id="exp-mass-ratio" class="font-bold text-yellow-400 mt-1">수소:산소 = 1:8</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="border-t border-purple-500/20 pt-4 flex justify-between items-center gap-4">
+                <div class="text-xs text-gray-400" id="step-hint">
+                    각 질문에 답한 뒤 '제출하기'를 눌러 다음 단계를 해제하십시오.
+                </div>
+                <button id="btn-modal-next" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2">
+                    <span>제출 및 확인</span> <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Web Audio & Core Game Engine Code -->
+    <script>
+        // Set up the responsive canvas size
+        const mainContainer = document.getElementById('game-container');
+        const shooterCanvas = document.getElementById('shooterCanvas');
+        const sCtx = shooterCanvas.getContext('2d');
+
+        function resizeGame() {
+            // Internal coordinate space setup (standard HD aspect)
+            shooterCanvas.width = 1200;
+            shooterCanvas.height = 675;
+        }
+        resizeGame();
+        window.addEventListener('resize', resizeGame);
+
+        // Web Audio API Synth Engine
+        const AudioEngine = {
+            ctx: null,
+            init() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+            playLaser() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            },
+            playHit() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            },
+            playItem() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(450, this.ctx.currentTime + 0.08);
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime + 0.16);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            },
+            playCorrect() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, this.ctx.currentTime + 0.2); // G5
+                osc.frequency.setValueAtTime(1046.50, this.ctx.currentTime + 0.3); // C6
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.5);
+            },
+            playWrong() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(147, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+        };
+
+        // --- GCD / SIMPLIFY UTILITIES FOR LIVE CALCULATIONS ---
+        function getGCD(a, b) {
+            return b ? getGCD(b, a % b) : a;
+        }
+        function getSimplifiedRatio(a, b) {
+            if (a === 0 && b === 0) return "0 : 0";
+            if (a === 0) return `0 : 1`;
+            if (b === 0) return `1 : 0`;
+            const gcdVal = getGCD(a, b);
+            return `${a / gcdVal} : ${b / gcdVal}`;
+        }
+
+        // --- SCIENCE DATA CONFIGURATION ---
+        const COMPOUNDS_DATA = [
+            {
+                formula: "H₂O",
+                name: "물 분자",
+                desc: "수소와 산소 원자가 결합하여 형성되는 신비로운 생명의 근원입니다.",
+                mainElement: "수소(H)",
+                subElement: "산소(O)",
+                atomRatio: "2:1",
+                massRatio: "1:8",
+                elements: [
+                    { symbol: "H", valency: 1, mass: 1, color: "#38bdf8", count: 2 },
+                    { symbol: "O", valency: 2, mass: 16, color: "#ef4444", count: 1 }
+                ],
+                explanation: "물의 일정성분비 법칙에 따르면 수소 원자 2개와 산소 원자 1개가 고정 비율로 결합합니다. 원자량(H=1, O=16)을 대입하면 질량비는 항상 (1×2) : (16×1) = 2 : 16, 즉 항상 1 : 8의 일정한 질량 성분 비율을 보존합니다."
+            },
+            {
+                formula: "CO",
+                name: "일산화탄소 분자",
+                desc: "탄소와 산소가 불완전 연소할 때 생기는 대단히 위험하고 반응성이 강한 화합물입니다.",
+                mainElement: "탄소(C)",
+                subElement: "산소(O)",
+                atomRatio: "1:1",
+                massRatio: "3:4",
+                elements: [
+                    { symbol: "C", valency: 4, mass: 12, color: "#94a3b8", count: 1 },
+                    { symbol: "O", valency: 2, mass: 16, color: "#ef4444", count: 1 }
+                ],
+                explanation: "일산화탄소(CO) 분자는 탄소 1개와 산소 1개가 1:1의 개수 비율로 강력히 결합합니다. 이에 따라 원자량 비율인 탄소(12) : 산소(16)가 성립되어 질량비는 일관되게 3 : 4가 됩니다."
+            },
+            {
+                formula: "CO₂",
+                name: "이산화탄소 분자",
+                desc: "탄소 원자 한 개에 산소 원자 두 개가 안정적으로 결합하여 생성되는 온실가스 주원료입니다.",
+                mainElement: "탄소(C)",
+                subElement: "산소(O)",
+                atomRatio: "1:2",
+                massRatio: "3:8",
+                elements: [
+                    { symbol: "C", valency: 4, mass: 12, color: "#94a3b8", count: 1 },
+                    { symbol: "O", valency: 2, mass: 16, color: "#ef4444", count: 2 }
+                ],
+                explanation: "이산화탄소(CO₂)의 개수비는 탄소:산소 = 1:2입니다. 질량 비율은 탄소(12) : 산소(16×2 = 32)가 되므로 12:32를 약분하면 완벽하게 3 : 8의 일정한 질량비를 나타내게 됩니다."
+            },
+            {
+                formula: "NH₃",
+                name: "암모니아 분자",
+                desc: "질소 원자 한 개와 수소 원자 세 개가 결합하여 만들어지는 독특한 자극성 냄새의 기체입니다.",
+                mainElement: "질소(N)",
+                subElement: "수소(H)",
+                atomRatio: "1:3",
+                massRatio: "14:3",
+                elements: [
+                    { symbol: "N", valency: 3, mass: 14, color: "#3b82f6", count: 1 },
+                    { symbol: "H", valency: 1, mass: 1, color: "#38bdf8", count: 3 }
+                ],
+                explanation: "암모니아(NH₃)의 개수비는 질소:수소 = 1:3입니다. 질소의 원자량은 14이고 수소의 원자량은 1이므로, 질량비는 항상 질소(14×1) : 수소(1×3) = 14 : 3의 일정한 질량 성분 비율을 보존합니다."
+            },
+            {
+                formula: "H₂O₂",
+                name: "과산화 수소 분자",
+                desc: "물 분자에 산소 원자 하나가 더 결합하여 강력한 소독 및 산화 작용을 지닌 액체 화합물입니다.",
+                mainElement: "수소(H)",
+                subElement: "산소(O)",
+                atomRatio: "1:1",
+                massRatio: "1:16",
+                elements: [
+                    { symbol: "H", valency: 1, mass: 1, color: "#38bdf8", count: 2 },
+                    { symbol: "O", valency: 2, mass: 16, color: "#ef4444", count: 2 }
+                ],
+                explanation: "과산화 수소(H₂O₂) 분자는 수소 원자 2개와 산소 원자 2개가 결합한 구조입니다. 가장 간단한 정수비로 나타내는 개수비는 1:1이 되며, 질량비는 수소(1×2=2) : 산소(16×2=32)로 계산되어 항상 1 : 16의 고유한 질량비를 보존합니다."
+            }
+        ];
+
+        // --- GAME STATE VARIABLES ---
+        let score = 0; // 시작 점수 0점 설정
+        let elapsedFrame = 0;
+        let collisionsCount = 0;
+        let gameLoopId = null;
+        let isGamePaused = false;
+        let stageIndex = 0; // 0 to 4 (5 stages total for 5 compounds)
+        let isStageActive = false;
+
+        // 속도 가속용 곱셈 인자 (미션을 한 단계 깰 때마다 소행성 속도가 1.2배씩 증가)
+        let speedMultiplier = 1.0; 
+
+        // 오답 기록용 DB 리포트 객체
+        let incorrectQuizLogs = []; 
+
+        // Player configuration
+        const player = {
+            x: 100,
+            y: 337,
+            width: 60,
+            height: 35,
+            speed: 6,
+            targetY: 337,
+            targetX: 100,
+            bullets: []
+        };
+
+        // Entity pools
+        let asteroids = [];
+        let stars = [];
+        let activePotion = null;
+        let particles = [];
+
+        // Stars for Parallax Background
+        for (let i = 0; i < 80; i++) {
+            stars.push({
+                x: Math.random() * 1200,
+                y: Math.random() * 675,
+                size: Math.random() * 2 + 1,
+                speed: Math.random() * 2 + 1
+            });
+        }
+
+        // --- SHOOTER INPUT LISTENERS ---
+        function setPlayerPosition(clientX, clientY) {
+            const rect = shooterCanvas.getBoundingClientRect();
+            const scaleX = shooterCanvas.width / rect.width;
+            const scaleY = shooterCanvas.height / rect.height;
+            player.targetX = (clientX - rect.left) * scaleX;
+            player.targetY = (clientY - rect.top) * scaleY;
+        }
+
+        mainContainer.addEventListener('mousemove', (e) => {
+            if (isGamePaused) return;
+            setPlayerPosition(e.clientX, e.clientY);
+        });
+
+        mainContainer.addEventListener('touchmove', (e) => {
+            if (isGamePaused) return;
+            if (e.touches.length > 0) {
+                setPlayerPosition(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => { keys[e.key] = true; });
+        window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+        // --- CANVAS DRAWER UTILITIES ---
+        function drawSpaceship(ctx, x, y) {
+            player.x += (player.targetX - player.x) * 0.15;
+            player.y += (player.targetY - player.y) * 0.15;
+
+            player.x = Math.max(40, Math.min(600, player.x));
+            player.y = Math.max(30, Math.min(640, player.y));
+
+            const px = player.x;
+            const py = player.y;
+
+            const glowSize = Math.sin(Date.now() / 30) * 10 + 15;
+            const grad = ctx.createRadialGradient(px - 35, py, 0, px - 35, py, glowSize);
+            grad.addColorStop(0, 'rgba(236, 72, 153, 0.9)');
+            grad.addColorStop(1, 'rgba(139, 92, 246, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(px - 35, py, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#a78bfa';
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(px + 30, py);
+            ctx.lineTo(px - 20, py - 18);
+            ctx.lineTo(px - 10, py - 5);
+            ctx.lineTo(px - 30, py - 5);
+            ctx.lineTo(px - 30, py + 5);
+            ctx.lineTo(px - 10, py + 5);
+            ctx.lineTo(px - 20, py + 18);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#22d3ee';
+            ctx.beginPath();
+            ctx.moveTo(px + 10, py - 4);
+            ctx.lineTo(px + 22, py);
+            ctx.lineTo(px + 10, py + 4);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+        }
+
+        // --- GAME LOOP LOGIC ---
+        function spawnAsteroid() {
+            if (Math.random() < 0.04 && asteroids.length < 15) {
+                const isLarge = Math.random() < 0.35;
+                if (isLarge) {
+                    asteroids.push({
+                        type: 'rectangle',
+                        x: 1250,
+                        y: Math.random() * 580 + 40,
+                        width: Math.random() * 20 + 55,
+                        height: Math.random() * 15 + 40,
+                        hp: 4,
+                        maxHp: 4,
+                        // 미션을 하나씩 깰 때마다 소행성 속도 배율 가속 적용!
+                        speed: (Math.random() * 1.5 + 1.5) * speedMultiplier,
+                        angle: 0,
+                        rotationSpeed: (Math.random() - 0.5) * 0.02
+                    });
+                } else {
+                    asteroids.push({
+                        type: 'diamond',
+                        x: 1250,
+                        y: Math.random() * 610 + 30,
+                        radius: Math.random() * 5 + 15,
+                        hp: 1,
+                        maxHp: 1,
+                        // 미션을 하나씩 깰 때마다 소행성 속도 배율 가속 적용!
+                        speed: (Math.random() * 2.5 + 4.5) * speedMultiplier,
+                        angle: 0,
+                        rotationSpeed: (Math.random() - 0.5) * 0.06
+                    });
+                }
+            }
+        }
+
+        function triggerDamageFlash() {
+            const flash = document.getElementById('damage-flash');
+            flash.style.opacity = '1';
+            setTimeout(() => { flash.style.opacity = '0'; }, 150);
+        }
+
+        function spawnPotion() {
+            if (!activePotion && !isStageActive && stageIndex < COMPOUNDS_DATA.length) {
+                activePotion = {
+                    x: 1250,
+                    y: Math.random() * 400 + 130,
+                    width: 35,
+                    height: 50,
+                    speed: 2.2,
+                    stageRef: stageIndex
+                };
+                isStageActive = true;
+                document.getElementById('stage-display').innerHTML = `<span class="text-yellow-400 font-bold">${COMPOUNDS_DATA[stageIndex].name} 물약</span> 탐색 중!`;
+            }
+        }
+
+        function updateGame() {
+            if (isGamePaused) return;
+
+            elapsedFrame++;
+
+            if (keys['ArrowUp'] || keys['w']) player.targetY -= player.speed;
+            if (keys['ArrowDown'] || keys['s']) player.targetY += player.speed;
+            if (keys['ArrowLeft'] || keys['a']) player.targetX -= player.speed;
+            if (keys['ArrowRight'] || keys['d']) player.targetX += player.speed;
+
+            const sec = Math.floor(elapsedFrame / 60);
+            const minutes = String(Math.floor(sec / 60)).padStart(2, '0');
+            const seconds = String(sec % 60).padStart(2, '0');
+            document.getElementById('time-display').innerText = `${minutes}:${seconds}`;
+
+            sCtx.fillStyle = '#020006';
+            sCtx.fillRect(0, 0, 1200, 675);
+
+            sCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            stars.forEach(star => {
+                star.x -= star.speed;
+                if (star.x < 0) {
+                    star.x = 1200;
+                    star.y = Math.random() * 675;
+                }
+                sCtx.beginPath();
+                sCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                sCtx.fill();
+            });
+
+            spawnAsteroid();
+            if (elapsedFrame % 450 === 0 && !activePotion) {
+                spawnPotion();
+            }
+
+            drawSpaceship(sCtx);
+
+            if (elapsedFrame % 11 === 0) {
+                player.bullets.push({
+                    x: player.x + 30,
+                    y: player.y,
+                    speed: 13
+                });
+                AudioEngine.playLaser();
+            }
+
+            sCtx.fillStyle = '#f472b6';
+            player.bullets.forEach((b, bIdx) => {
+                b.x += b.speed;
+                sCtx.shadowBlur = 8;
+                sCtx.shadowColor = '#f472b6';
+                sCtx.fillRect(b.x, b.y - 2, 12, 4);
+                sCtx.shadowBlur = 0;
+
+                if (b.x > 1200) player.bullets.splice(bIdx, 1);
+            });
+
+            particles.forEach((p, pIdx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.025;
+                sCtx.fillStyle = `rgba(${p.color}, ${p.alpha})`;
+                sCtx.beginPath();
+                sCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                sCtx.fill();
+                if (p.alpha <= 0) particles.splice(pIdx, 1);
+            });
+
+            asteroids.forEach((ast, aIdx) => {
+                ast.x -= ast.speed;
+                ast.angle += ast.rotationSpeed;
+
+                sCtx.save();
+                sCtx.translate(ast.x, ast.y);
+                sCtx.rotate(ast.angle);
+
+                if (ast.type === 'rectangle') {
+                    sCtx.strokeStyle = 'rgba(139, 92, 246, 0.85)';
+                    sCtx.lineWidth = 3;
+                    sCtx.fillStyle = '#1e1b4b';
+                    sCtx.shadowBlur = 10;
+                    sCtx.shadowColor = 'rgba(139, 92, 246, 0.4)';
+                    
+                    sCtx.beginPath();
+                    sCtx.rect(-ast.width / 2, -ast.height / 2, ast.width, ast.height);
+                    sCtx.fill();
+                    sCtx.stroke();
+
+                    if (ast.hp < ast.maxHp) {
+                        sCtx.fillStyle = '#ef4444';
+                        sCtx.fillRect(-ast.width / 2, -ast.height / 2 - 12, ast.width, 4);
+                        sCtx.fillStyle = '#22c55e';
+                        sCtx.fillRect(-ast.width / 2, -ast.height / 2 - 12, ast.width * (ast.hp / ast.maxHp), 4);
+                    }
+                } else {
+                    sCtx.strokeStyle = 'rgba(244, 114, 182, 0.9)';
+                    sCtx.lineWidth = 2;
+                    sCtx.fillStyle = '#31102f';
+                    sCtx.shadowBlur = 8;
+                    sCtx.shadowColor = 'rgba(244, 114, 182, 0.4)';
+
+                    sCtx.beginPath();
+                    sCtx.moveTo(0, -ast.radius);
+                    sCtx.lineTo(ast.radius, 0);
+                    sCtx.lineTo(0, ast.radius);
+                    sCtx.lineTo(-ast.radius, 0);
+                    sCtx.closePath();
+                    sCtx.fill();
+                    sCtx.stroke();
+                }
+                sCtx.restore();
+
+                const boundsRadius = ast.type === 'rectangle' ? Math.hypot(ast.width, ast.height) / 2 : ast.radius;
+
+                player.bullets.forEach((b, bIdx) => {
+                    const dist = Math.hypot(b.x - ast.x, b.y - ast.y);
+                    if (dist < boundsRadius) {
+                        for (let k = 0; k < 5; k++) {
+                            particles.push({
+                                x: ast.x,
+                                y: ast.y,
+                                vx: (Math.random() - 0.5) * 6,
+                                vy: (Math.random() - 0.5) * 6,
+                                alpha: 1,
+                                size: Math.random() * 3 + 1,
+                                color: ast.type === 'rectangle' ? '139, 92, 246' : '244, 114, 182'
+                            });
+                        }
+                        
+                        ast.hp--;
+                        player.bullets.splice(bIdx, 1);
+
+                        if (ast.hp <= 0) {
+                            if (ast.type === 'rectangle') {
+                                score += 5;
+                            } else {
+                                score += 2;
+                            }
+                            document.getElementById('score-display').innerText = score;
+                            asteroids.splice(aIdx, 1);
+                            AudioEngine.playHit();
+                        }
+                    }
+                });
+
+                const distToShip = Math.hypot(player.x - ast.x, player.y - ast.y);
+                if (distToShip < boundsRadius + 14) {
+                    if (ast.type === 'rectangle') {
+                        score = Math.max(0, score - 10);
+                    } else {
+                        score = Math.max(0, score - 5);
+                    }
+                    collisionsCount++;
+                    document.getElementById('score-display').innerText = score;
+                    triggerDamageFlash();
+                    AudioEngine.playHit();
+                    asteroids.splice(aIdx, 1);
+                }
+
+                if (ast.x < -120) asteroids.splice(aIdx, 1);
+            });
+
+            if (activePotion) {
+                activePotion.x -= activePotion.speed;
+
+                sCtx.save();
+                sCtx.translate(activePotion.x, activePotion.y);
+
+                sCtx.shadowBlur = 20;
+                sCtx.shadowColor = '#fbbf24';
+
+                sCtx.fillStyle = '#fbbf24';
+                sCtx.beginPath();
+                sCtx.fillRect(-8, -25, 16, 12);
+                sCtx.fillRect(-12, -27, 24, 4);
+                sCtx.moveTo(-6, -13);
+                sCtx.lineTo(-22, 18);
+                sCtx.arcTo(-24, 22, -18, 22, 6);
+                sCtx.lineTo(18, 22);
+                sCtx.arcTo(24, 22, 22, 18, 6);
+                sCtx.lineTo(6, -13);
+                sCtx.closePath();
+                sCtx.fill();
+
+                sCtx.fillStyle = '#ec4899';
+                sCtx.beginPath();
+                sCtx.moveTo(-4, -5);
+                sCtx.lineTo(-18, 18);
+                sCtx.lineTo(18, 18);
+                sCtx.lineTo(4, -5);
+                sCtx.closePath();
+                sCtx.fill();
+
+                sCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                sCtx.fillRect(-2, -15, 4, 10);
+
+                sCtx.restore();
+
+                const distToPotion = Math.hypot(player.x - activePotion.x, player.y - activePotion.y);
+                if (distToPotion < 40) {
+                    AudioEngine.playItem();
+                    launchScienceQuiz(activePotion.stageRef);
+                    activePotion = null;
+                }
+
+                if (activePotion && activePotion.x < -100) {
+                    activePotion = null;
+                    isStageActive = false;
+                }
+            }
+
+            gameLoopId = requestAnimationFrame(updateGame);
+        }
+
+        // --- SCIENCE QUIZ SYSTEM MECHANICS ---
+        let currentQuizData = null;
+        let generatedAtomCounts = {};
+        let solvedCorrectlyCount = 0;
+        let formulaQuizScore = 0;
+        let isStep1Graded = false;
+
+        function launchScienceQuiz(stageIndexRef) {
+            isGamePaused = true;
+            cancelAnimationFrame(gameLoopId);
+
+            currentQuizData = COMPOUNDS_DATA[stageIndexRef];
+            solvedCorrectlyCount = 0;
+            formulaQuizScore = 0;
+            isStep1Graded = false;
+
+            document.getElementById('quiz-compound-formula').innerText = currentQuizData.formula;
+            document.getElementById('quiz-compound-name').innerText = `${currentQuizData.name} 복구 프로토콜`;
+            document.getElementById('quiz-potential-score').innerText = "30점";
+
+            document.getElementById('validation-warning').classList.add('hidden');
+
+            generateRandomInventoryAtoms(currentQuizData);
+
+            const modal = document.getElementById('quiz-modal');
+            modal.classList.remove('hidden');
+
+            showStep(1);
+        }
+
+        function generateRandomInventoryAtoms(compound) {
+            const minMultiplier = 2;
+            const maxMultiplier = 4;
+            const targetMolecules = Math.floor(Math.random() * (maxMultiplier - minMultiplier + 1)) + minMultiplier;
+
+            const generated = {};
+            compound.elements.forEach(el => {
+                const required = el.count * targetMolecules;
+                const excess = Math.floor(Math.random() * 2) + 1; 
+                generated[el.symbol] = required + excess;
+            });
+
+            generatedAtomCounts = generated;
+
+            const container = document.getElementById('atom-inventory-display');
+            container.innerHTML = '';
+            
+            compound.elements.forEach(el => {
+                const count = generated[el.symbol];
+                const atomHTML = `
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-extrabold shadow-lg select-none text-lg border border-white/20 orbitron" 
+                             style="background-color: ${el.color}; box-shadow: 0 0 15px ${el.color}60;">
+                            ${el.symbol}
+                        </div>
+                        <span class="text-xs text-white font-black mt-2 bg-white/10 px-2.5 py-0.5 rounded-full orbitron">${count}개</span>
+                    </div>
+                `;
+                container.innerHTML += atomHTML;
+            });
+
+            const isSingleElement = compound.elements.length === 1;
+            const elementAName = compound.elements[0].symbol;
+            const elementBName = isSingleElement ? compound.elements[0].symbol : compound.elements[1].symbol;
+
+            document.getElementById('lbl-q2').innerText = `Q2. ${compound.name}를 구성하는 원자 수 비율 (${elementAName} : ${elementBName})?`;
+            document.getElementById('lbl-q3').innerText = `Q3. ${compound.name}를 구성하는 성분 원소의 질량비 (${elementAName} : ${elementBName})?`;
+
+            document.getElementById('lbl-live-atom-ratio').innerText = `결합된 원소들의 개수비 (${elementAName} : ${elementBName})`;
+            document.getElementById('lbl-live-mass-ratio').innerText = `결합된 성분의 질량비 (${elementAName} : ${elementBName})`;
+
+            document.getElementById('ans-q1').value = '';
+            document.getElementById('ans-q1').disabled = false;
+            document.getElementById('ans-q1').className = "bg-black/40 border border-purple-500/20 rounded-lg px-3 py-1 text-white text-sm focus:outline-none focus:border-purple-500 w-full orbitron";
+            document.getElementById('feedback-q1').innerHTML = '';
+
+            ['q2', 'q3'].forEach(q => {
+                document.getElementById(`ans-${q}-1`).value = '';
+                document.getElementById(`ans-${q}-2`).value = '';
+                document.getElementById(`ans-${q}-1`).disabled = false;
+                document.getElementById(`ans-${q}-2`).disabled = false;
+                document.getElementById(`ans-${q}-1`).parentElement.className = "flex items-center gap-2 bg-black/40 border border-purple-500/20 rounded-lg px-3 py-1 w-full justify-center";
+                document.getElementById(`feedback-${q}`).innerHTML = '';
+            });
+        }
+
+        // --- SPECIFIC BOND VALIDATION LOGIC FOR CHEMICAL STRUCTURES ---
+        function canTheseAtomsBond(atomA, atomB, compound) {
+            const formula = compound.formula;
+            const symA = atomA.symbol;
+            const symB = atomB.symbol;
+
+            if (formula === "H₂O") {
+                return (symA === "H" && symB === "O") || (symA === "O" && symB === "H");
+            }
+            if (formula === "CO") {
+                return (symA === "C" && symB === "O") || (symA === "O" && symB === "C");
+            }
+            if (formula === "CO₂") {
+                return (symA === "C" && symB === "O") || (symA === "O" && symB === "C");
+            }
+            if (formula === "NH₃") {
+                return (symA === "N" && symB === "H") || (symA === "H" && symB === "N");
+            }
+            if (formula === "H₂O₂") {
+                if (symA === "H" && symB === "H") return false;
+                return true;
+            }
+            return false;
+        }
+
+        // --- DRAG-AND-DROP CHEMISTRY ASSEMBLY WORKSPACE ---
+        let assemblyCanvas = document.getElementById('assemblyCanvas');
+        let aCtx = assemblyCanvas.getContext('2d');
+        let assemblyAtoms = [];
+        let isDraggingAtom = null;
+        let dragOffset = { x: 0, y: 0 };
+        let assemblyAnimationId = null;
+        let hasJustDragged = false; 
+
+        function initAssemblyWorkspace(compound) {
+            assemblyAtoms = [];
+            isDraggingAtom = null;
+            hasJustDragged = false;
+
+            let idCounter = 0;
+            const padding = 35;
+
+            const atomsToPlace = [];
+            compound.elements.forEach(el => {
+                const totalCount = generatedAtomCounts[el.symbol] || el.count;
+                for (let i = 0; i < totalCount; i++) {
+                    atomsToPlace.push({
+                        symbol: el.symbol,
+                        color: el.color,
+                        valency: el.valency,
+                        mass: el.mass
+                    });
+                }
+            });
+
+            atomsToPlace.forEach(rawAtom => {
+                let x, y, attempts = 0;
+                let isFarEnough = false;
+
+                while (!isFarEnough && attempts < 150) {
+                    const canvasW = assemblyCanvas.width || 600;
+                    const canvasH = assemblyCanvas.height || 220;
+
+                    x = padding + Math.random() * (canvasW - padding * 2);
+                    y = padding + Math.random() * (canvasH - padding * 2);
+
+                    isFarEnough = true;
+                    for (let placed of assemblyAtoms) {
+                        const dist = Math.hypot(placed.x - x, placed.y - y);
+                        if (dist < 75) {
+                            isFarEnough = false;
+                            break;
+                        }
+                    }
+                    attempts++;
+                }
+
+                assemblyAtoms.push({
+                    id: idCounter++,
+                    symbol: rawAtom.symbol,
+                    color: rawAtom.color,
+                    radius: 17,
+                    valency: rawAtom.valency,
+                    mass: rawAtom.mass,
+                    currentBonds: [],
+                    x: x,
+                    y: y,
+                    vx: 0,
+                    vy: 0
+                });
+            });
+
+            if (assemblyAnimationId) cancelAnimationFrame(assemblyAnimationId);
+            runAssemblyLoop();
+        }
+
+        function getCanvasMousePos(canvas, clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function getDistanceToSegment(p0, p1, p2) {
+            const x0 = p0.x, y0 = p0.y;
+            const x1 = p1.x, y1 = p1.y;
+            const x2 = p2.x, y2 = p2.y;
+
+            const l2 = Math.hypot(x2 - x1, y2 - y1);
+            if (l2 === 0) return Math.hypot(x0 - x1, y0 - y1);
+
+            let t = ((x0 - x1) * (x2 - x1) + (y0 - y1) * (y2 - y1)) / (l2 * l2);
+            t = Math.max(0, Math.min(1, t));
+
+            return Math.hypot(x0 - (x1 + t * (x2 - x1)), y0 - (y1 + t * (y2 - y1)));
+        }
+
+        function checkAndBreakBond(clickPos) {
+            let bondToBreak = null;
+            let minDistance = 8; 
+
+            for (let i = 0; i < assemblyAtoms.length; i++) {
+                const atomA = assemblyAtoms[i];
+                for (let neighborId of atomA.currentBonds) {
+                    const atomB = assemblyAtoms.find(a => a.id === neighborId);
+                    if (!atomB || atomA.id > atomB.id) continue; 
+
+                    const dist = getDistanceToSegment(clickPos, atomA, atomB);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bondToBreak = { a: atomA, b: atomB };
+                    }
+                }
+            }
+
+            if (bondToBreak) {
+                const { a, b } = bondToBreak;
+                a.currentBonds = a.currentBonds.filter(id => id !== b.id);
+                b.currentBonds = b.currentBonds.filter(id => id !== a.id);
+                AudioEngine.playWrong(); 
+                updateAssemblyMetrics(); 
+                return true;
+            }
+            return false;
+        }
+
+        function handleStartDrag(x, y) {
+            hasJustDragged = false;
+            for (let atom of assemblyAtoms) {
+                const dist = Math.hypot(atom.x - x, atom.y - y);
+                if (dist < atom.radius + 6) {
+                    isDraggingAtom = atom;
+                    dragOffset.x = x - atom.x;
+                    dragOffset.y = y - atom.y;
+                    break;
+                }
+            }
+        }
+
+        function handleMoveDrag(x, y) {
+            if (isDraggingAtom) {
+                isDraggingAtom.x = x - dragOffset.x;
+                isDraggingAtom.y = y - dragOffset.y;
+                hasJustDragged = true; 
+            }
+        }
+
+        function handleEndDrag(x, y) {
+            if (isDraggingAtom) {
+                if (hasJustDragged) {
+                    const idealBondDist = 62;
+                    
+                    for (let other of assemblyAtoms) {
+                        if (other.id === isDraggingAtom.id) continue;
+
+                        const dist = Math.hypot(isDraggingAtom.x - other.x, isDraggingAtom.y - other.y);
+                        if (dist < idealBondDist) {
+                            const isConnected = isDraggingAtom.currentBonds.includes(other.id);
+                            const canBond = (isDraggingAtom.currentBonds.length < isDraggingAtom.valency) && (other.currentBonds.length < other.valency);
+                            const allowedByChemistry = canTheseAtomsBond(isDraggingAtom, other, currentQuizData);
+
+                            if (!isConnected && canBond && allowedByChemistry) {
+                                isDraggingAtom.currentBonds.push(other.id);
+                                other.currentBonds.push(isDraggingAtom.id);
+                                AudioEngine.playCorrect();
+                                updateAssemblyMetrics();
+                            }
+                        }
+                    }
+                } else {
+                    checkAndBreakBond({ x: isDraggingAtom.x, y: isDraggingAtom.y });
+                }
+                isDraggingAtom = null;
+            } else if (x !== undefined && y !== undefined) {
+                checkAndBreakBond({ x, y });
+            }
+        }
+
+        assemblyCanvas.addEventListener('mousedown', (e) => {
+            const pos = getCanvasMousePos(assemblyCanvas, e.clientX, e.clientY);
+            handleStartDrag(pos.x, pos.y);
+        });
+        assemblyCanvas.addEventListener('mousemove', (e) => {
+            const pos = getCanvasMousePos(assemblyCanvas, e.clientX, e.clientY);
+            handleMoveDrag(pos.x, pos.y);
+        });
+        window.addEventListener('mouseup', (e) => {
+            if (currentStep === 2) {
+                const pos = getCanvasMousePos(assemblyCanvas, e.clientX, e.clientY);
+                handleEndDrag(pos.x, pos.y);
+            } else {
+                isDraggingAtom = null;
+            }
+        });
+
+        assemblyCanvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                const pos = getCanvasMousePos(assemblyCanvas, e.touches[0].clientX, e.touches[0].clientY);
+                handleStartDrag(pos.x, pos.y);
+            }
+        }, { passive: true });
+
+        assemblyCanvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const pos = getCanvasMousePos(assemblyCanvas, e.touches[0].clientX, e.touches[0].clientY);
+                handleMoveDrag(pos.x, pos.y);
+            }
+        }, { passive: true });
+
+        assemblyCanvas.addEventListener('touchend', (e) => {
+            if (currentStep === 2) {
+                if (e.changedTouches.length > 0) {
+                    const pos = getCanvasMousePos(assemblyCanvas, e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                    handleEndDrag(pos.x, pos.y);
+                } else {
+                    handleEndDrag();
+                }
+            } else {
+                isDraggingAtom = null;
+            }
+        });
+
+        // Calculate and update assembly telemetry (strictly calculated for EXACTLY 1 COMPLETED MOLECULE)
+        function updateAssemblyMetrics() {
+            if (!currentQuizData) return;
+
+            const visited = new Set();
+            const components = [];
+
+            for (let atom of assemblyAtoms) {
+                if (!visited.has(atom.id)) {
+                    const comp = [];
+                    const queue = [atom];
+                    visited.add(atom.id);
+                    while (queue.length > 0) {
+                        const current = queue.shift();
+                        comp.push(current);
+                        for (let neighborId of current.currentBonds) {
+                            const neighbor = assemblyAtoms.find(a => a.id === neighborId);
+                            if (neighbor && !visited.has(neighbor.id)) {
+                                visited.add(neighbor.id);
+                                queue.push(neighbor);
+                            }
+                        }
+                    }
+                    components.push(comp);
+                }
+            }
+
+            let completedMolecules = 0;
+            const targetReqs = {};
+            currentQuizData.elements.forEach(el => {
+                targetReqs[el.symbol] = el.count;
+            });
+
+            components.forEach(comp => {
+                if (comp.length <= 1) return;
+
+                const countsInComp = {};
+                comp.forEach(atom => {
+                    countsInComp[atom.symbol] = (countsInComp[atom.symbol] || 0) + 1;
+                });
+
+                let isMatch = true;
+                currentQuizData.elements.forEach(el => {
+                    if ((countsInComp[el.symbol] || 0) !== el.count) {
+                        isMatch = false;
+                    }
+                });
+
+                for (let symbol in countsInComp) {
+                    const foundInFormula = currentQuizData.elements.find(el => el.symbol === symbol);
+                    if (!foundInFormula) isMatch = false;
+                }
+
+                if (isMatch) {
+                    completedMolecules++;
+                }
+            });
+
+            document.getElementById('live-molecules').innerText = completedMolecules;
+            
+            if (completedMolecules >= 1) {
+                const isSingle = currentQuizData.elements.length === 1;
+                const eA = currentQuizData.elements[0];
+                const eB = isSingle ? currentQuizData.elements[0] : currentQuizData.elements[1];
+
+                document.getElementById('live-atom-ratio').innerText = `${eA.count} : ${isSingle ? eA.count : eB.count}`;
+                document.getElementById('live-mass-ratio').innerText = getSimplifiedRatio(eA.count * eA.mass, (isSingle ? eA.count : eB.count) * eB.mass);
+            } else {
+                document.getElementById('live-atom-ratio').innerText = "0 : 0";
+                document.getElementById('live-mass-ratio').innerText = "0 : 0";
+            }
+        }
+
+        function runAssemblyLoop() {
+            const rect = assemblyCanvas.getBoundingClientRect();
+            if (assemblyCanvas.width !== rect.width || assemblyCanvas.height !== rect.height) {
+                assemblyCanvas.width = rect.width;
+                assemblyCanvas.height = rect.height;
+            }
+
+            aCtx.clearRect(0, 0, assemblyCanvas.width, assemblyCanvas.height);
+
+            for (let i = 0; i < assemblyAtoms.length; i++) {
+                for (let j = i + 1; j < assemblyAtoms.length; j++) {
+                    const atomA = assemblyAtoms[i];
+                    const atomB = assemblyAtoms[j];
+                    
+                    const dist = Math.hypot(atomA.x - atomB.x, atomA.y - atomB.y);
+                    const idealBondDist = 58;
+
+                    if (atomA.currentBonds.includes(atomB.id)) {
+                        const forceFactor = 0.05;
+                        const deltaX = atomB.x - atomA.x;
+                        const deltaY = atomB.y - atomA.y;
+                        const force = (dist - idealBondDist) * forceFactor;
+
+                        if (atomA !== isDraggingAtom) {
+                            atomA.x += (deltaX / dist) * force;
+                            atomA.y += (deltaY / dist) * force;
+                        }
+                        if (atomB !== isDraggingAtom) {
+                            atomB.x -= (deltaX / dist) * force;
+                            atomB.y -= (deltaY / dist) * force;
+                        }
+
+                        aCtx.strokeStyle = '#cbd5e1';
+                        aCtx.lineWidth = 4;
+                        aCtx.beginPath();
+                        aCtx.moveTo(atomA.x, atomA.y);
+                        aCtx.lineTo(atomB.x, atomB.y);
+                        aCtx.stroke();
+                    }
+                }
+            }
+
+            assemblyAtoms.forEach(atom => {
+                atom.x = Math.max(atom.radius + 10, Math.min(assemblyCanvas.width - atom.radius - 10, atom.x));
+                atom.y = Math.max(atom.radius + 10, Math.min(assemblyCanvas.height - atom.radius - 10, atom.y));
+
+                const grad = aCtx.createRadialGradient(atom.x - 5, atom.y - 5, 2, atom.x, atom.y, atom.radius);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, atom.color);
+                grad.addColorStop(1, '#000000');
+
+                aCtx.fillStyle = grad;
+                aCtx.beginPath();
+                aCtx.arc(atom.x, atom.y, atom.radius, 0, Math.PI * 2);
+                aCtx.fill();
+
+                aCtx.fillStyle = '#ffffff';
+                aCtx.font = 'bold 12px sans-serif';
+                aCtx.textAlign = 'center';
+                aCtx.textBaseline = 'middle';
+                aCtx.fillText(atom.symbol, atom.x, atom.y - 2);
+
+                const remainingBonds = atom.valency - atom.currentBonds.length;
+                aCtx.fillStyle = remainingBonds > 0 ? '#fbbf24' : '#22c55e';
+                aCtx.font = 'bold 9px sans-serif';
+                aCtx.fillText(`·`.repeat(remainingBonds) || '✔', atom.x, atom.y + 11);
+            });
+
+            updateAssemblyMetrics();
+
+            assemblyAnimationId = requestAnimationFrame(runAssemblyLoop);
+        }
+
+        // --- MULTI-STEP WIZARD PROGRESSION ---
+        let currentStep = 1;
+
+        function showStep(stepNum) {
+            currentStep = stepNum;
+            document.getElementById('quiz-step-1').classList.add('hidden');
+            document.getElementById('quiz-step-2').classList.add('hidden');
+            document.getElementById('quiz-step-3').classList.add('hidden');
+
+            document.getElementById(`quiz-step-${stepNum}`).classList.remove('hidden');
+
+            const nextBtn = document.getElementById('btn-modal-next');
+            const hint = document.getElementById('step-hint');
+            const warning = document.getElementById('validation-warning');
+            warning.classList.add('hidden');
+
+            if (stepNum === 1) {
+                hint.innerText = "질문에 정답을 입력 후 제출해 주세요. (각 정답 시 10점 추가)";
+                nextBtn.innerHTML = '<span>제출 및 확인</span> <i class="fa-solid fa-arrow-right"></i>';
+            } else if (stepNum === 2) {
+                hint.innerText = "원자들을 가깝게 드래그해 놓아서(Release) 완전한 화합물을 분자 수만큼 조립하세요. 잘못 연결된 막대는 클릭해 끊을 수 있습니다.";
+                nextBtn.innerHTML = '<span> 결과 확인</span> <i class="fa-solid fa-vial-circle-check"></i>';
+                initAssemblyWorkspace(currentQuizData);
+            } else if (stepNum === 3) {
+                hint.innerText = "결합된 모형과 해설을 정독하세요.";
+                nextBtn.innerHTML = '<span>우주로 복귀하기</span> <i class="fa-solid fa-shuttle-space"></i>';
+                
+                if (assemblyAnimationId) cancelAnimationFrame(assemblyAnimationId);
+
+                document.getElementById('explanation-text').innerText = currentQuizData.explanation;
+                document.getElementById('exp-compound').innerText = currentQuizData.formula;
+
+                const isSingle = currentQuizData.elements.length === 1;
+                const eA = currentQuizData.elements[0].symbol;
+                const eB = isSingle ? currentQuizData.elements[0].symbol : currentQuizData.elements[1].symbol;
+
+                document.getElementById('exp-atom-ratio').innerText = `${eA}:${eB} = ${currentQuizData.atomRatio}`;
+                document.getElementById('exp-mass-ratio').innerText = `${eA}:${eB} = ${currentQuizData.massRatio}`;
+            }
+        }
+
+        // --- SUBMITTING ANSWERS & PROGRESSING STEPS ---
+        document.getElementById('btn-modal-next').addEventListener('click', () => {
+            const warning = document.getElementById('validation-warning');
+            const warningText = document.getElementById('warning-message-text');
+
+            if (currentStep === 1) {
+                if (!isStep1Graded) {
+                    const q1Raw = document.getElementById('ans-q1').value.trim();
+                    const q2_1Raw = document.getElementById('ans-q2-1').value.trim();
+                    const q2_2Raw = document.getElementById('ans-q2-2').value.trim();
+                    const q3_1Raw = document.getElementById('ans-q3-1').value.trim();
+                    const q3_2Raw = document.getElementById('ans-q3-2').value.trim();
+
+                    if (!q1Raw || !q2_1Raw || !q2_2Raw || !q3_1Raw || !q3_2Raw) {
+                        warningText.innerText = "모든 질문에 답을 채워 넣어야 제출할 수 있습니다!";
+                        warning.classList.remove('hidden');
+                        AudioEngine.playWrong();
+                        return;
+                    }
+                    warning.classList.add('hidden');
+                    gradeTheoryQuiz();
+                } else {
+                    showStep(2);
+                }
+            } else if (currentStep === 2) {
+                const completedMolecules = parseInt(document.getElementById('live-molecules').innerText);
+                if (completedMolecules < 1) {
+                    warningText.innerText = "원자들을 알맞게 결합하고 최소 1개 이상의 완벽한 분자를 결합해야 통과할 수 있습니다!";
+                    warning.classList.remove('hidden');
+                    AudioEngine.playWrong();
+                    return;
+                }
+                warning.classList.add('hidden');
+                showStep(3);
+            } else if (currentStep === 3) {
+                document.getElementById('quiz-modal').classList.add('hidden');
+                
+                score += formulaQuizScore;
+                document.getElementById('score-display').innerText = score;
+
+                // 다음 스테이지로 진입하면서 속도 배율 가속 증가 처리! (점점 빨라짐)
+                stageIndex++;
+                speedMultiplier += 0.25; 
+                isStageActive = false;
+
+                if (stageIndex >= COMPOUNDS_DATA.length) {
+                    endGame(true);
+                } else {
+                    isGamePaused = false;
+                    document.getElementById('stage-display').innerHTML = `다음 목적지 물약 검색 중...`;
+                    updateGame();
+                }
+            }
+        });
+
+        function gradeTheoryQuiz() {
+            const q1Raw = document.getElementById('ans-q1').value.trim();
+            const q2_1Raw = document.getElementById('ans-q2-1').value.trim();
+            const q2_2Raw = document.getElementById('ans-q2-2').value.trim();
+            const q3_1Raw = document.getElementById('ans-q3-1').value.trim();
+            const q3_2Raw = document.getElementById('ans-q3-2').value.trim();
+
+            let maxMolecules = Infinity;
+            currentQuizData.elements.forEach(el => {
+                const available = generatedAtomCounts[el.symbol] || 0;
+                const reqPerMolecule = el.count;
+                const canMake = Math.floor(available / reqPerMolecule);
+                if (canMake < maxMolecules) maxMolecules = canMake;
+            });
+
+            const userQ1 = parseInt(q1Raw);
+            const userQ2 = `${q2_1Raw}:${q2_2Raw}`;
+            const userQ3 = `${q3_1Raw}:${q3_2Raw}`;
+
+            const correctQ1 = maxMolecules;
+            const correctQ2 = currentQuizData.atomRatio;
+            const correctQ3 = currentQuizData.massRatio;
+
+            let correctCount = 0;
+
+            // Q1 채점
+            const f1 = document.getElementById('feedback-q1');
+            const i1 = document.getElementById('ans-q1');
+            i1.disabled = true;
+            if (userQ1 === correctQ1) {
+                f1.innerHTML = '<span class="text-green-400"><i class="fa-solid fa-circle-check"></i> 정답 (+10)</span>';
+                i1.className += " border-green-500 bg-green-950/20";
+                correctCount++;
+                formulaQuizScore += 10;
+            } else {
+                f1.innerHTML = `<span class="text-red-400"><i class="fa-solid fa-circle-xmark"></i> 오답 (정답: ${correctQ1})</span>`;
+                i1.className += " border-red-500 bg-red-950/20";
+                
+                // 리포트용 오답 로그 누적 기록
+                incorrectQuizLogs.push({
+                    compound: currentQuizData.name,
+                    formula: currentQuizData.formula,
+                    questionType: "최대 분자 개수 산출",
+                    userAns: userQ1,
+                    correctAns: correctQ1,
+                    cause: "한정된 원자 개수와 비율(Stochiometry)을 비교 계산할 때 올바르게 결합하지 못하였습니다."
+                });
+            }
+
+            // Q2 채점 (원자 수 정수비)
+            const f2 = document.getElementById('feedback-q2');
+            const q2_input1 = document.getElementById('ans-q2-1');
+            const q2_input2 = document.getElementById('ans-q2-2');
+            q2_input1.disabled = true;
+            q2_input2.disabled = true;
+
+            const isQ2Correct = (userQ2 === correctQ2);
+            if (isQ2Correct) {
+                f2.innerHTML = '<span class="text-green-400"><i class="fa-solid fa-circle-check"></i> 정답 (+10)</span>';
+                q2_input1.parentElement.className = "flex items-center gap-2 bg-green-950/20 border border-green-500 rounded-lg px-3 py-1 w-full justify-center";
+                correctCount++;
+                formulaQuizScore += 10;
+            } else {
+                f2.innerHTML = `<span class="text-red-400"><i class="fa-solid fa-circle-xmark"></i> 오답 (정답: ${correctQ2})</span>`;
+                q2_input1.parentElement.className = "flex items-center gap-2 bg-red-950/20 border border-red-500 rounded-lg px-3 py-1 w-full justify-center";
+                
+                incorrectQuizLogs.push({
+                    compound: currentQuizData.name,
+                    formula: currentQuizData.formula,
+                    questionType: "원자 수 결합 정수비",
+                    userAns: userQ2,
+                    correctAns: correctQ2,
+                    cause: "화학식에서 약분 가능한 상태(가장 간단한 가장 원칙적인 비)로 계산하지 못했거나 화합물 구성 원자 개수를 헷갈렸습니다."
+                });
+            }
+
+            // Q3 채점 (성분 질량비)
+            const f3 = document.getElementById('feedback-q3');
+            const q3_input1 = document.getElementById('ans-q3-1');
+            const q3_input2 = document.getElementById('ans-q3-2');
+            q3_input1.disabled = true;
+            q3_input2.disabled = true;
+
+            const isQ3Correct = (userQ3 === correctQ3);
+            if (isQ3Correct) {
+                f3.innerHTML = '<span class="text-green-400"><i class="fa-solid fa-circle-check"></i> 정답 (+10)</span>';
+                q3_input1.parentElement.className = "flex items-center gap-2 bg-green-950/20 border border-green-500 rounded-lg px-3 py-1 w-full justify-center";
+                correctCount++;
+                formulaQuizScore += 10;
+            } else {
+                f3.innerHTML = `<span class="text-red-400"><i class="fa-solid fa-circle-xmark"></i> 오답 (정답: ${correctQ3})</span>`;
+                q3_input1.parentElement.className = "flex items-center gap-2 bg-red-950/20 border border-red-500 rounded-lg px-3 py-1 w-full justify-center";
+                
+                incorrectQuizLogs.push({
+                    compound: currentQuizData.name,
+                    formula: currentQuizData.formula,
+                    questionType: "성분 원소간 질량비",
+                    userAns: userQ3,
+                    correctAns: correctQ3,
+                    cause: "개별 원자 수에 원자량 수치(H=1, C=12, N=14, O=16)를 곱하는 곱셈식에 착오가 있거나 최종 비의 약분에 실패했습니다."
+                });
+            }
+
+            if (correctCount > 0) {
+                AudioEngine.playCorrect();
+            } else {
+                AudioEngine.playWrong();
+            }
+
+            document.getElementById('quiz-potential-score').innerText = `${formulaQuizScore}점 획득!`;
+            document.getElementById('btn-modal-next').innerHTML = '<span>원자 조립하러 가기</span> <i class="fa-solid fa-network-wired"></i>';
+            isStep1Graded = true;
+        }
+
+        // --- END GAME FLOWS (WITH REPORT CARD POPULATION) ---
+        function populateStudyReport() {
+            const reportContainer = document.getElementById('incorrect-log-container');
+            const recommendationBox = document.getElementById('ai-study-recommendation');
+            reportContainer.innerHTML = '';
+
+            if (incorrectQuizLogs.length === 0) {
+                reportContainer.innerHTML = `
+                    <div class="bg-green-500/10 border border-green-500/30 p-4 rounded-xl text-center">
+                        <div class="text-green-400 text-3xl mb-2"><i class="fa-solid fa-graduation-cap"></i></div>
+                        <h5 class="font-bold text-white text-sm">오답 제로! 마스터 완성</h5>
+                        <p class="text-xs text-gray-400 mt-1">모든 화합물의 원자 수비, 최대 생성량, 일정 질량비 계산 문제를 단 한 번의 오류도 없이 완벽하게 해결하셨습니다!</p>
+                    </div>
+                `;
+                recommendationBox.innerHTML = `
+                    <strong>종합 추천 의견:</strong> 당신은 중학 과학 범위의 화학 기본 개념과 정량 성분비를 완전히 습득하셨습니다. 이제 고등학교 화학Ⅰ의 '화학식량과 몰' 영역으로 선행 확장을 진행하셔도 좋습니다.
+                `;
+                return;
+            }
+
+            // Populate individual wrong answer cards
+            incorrectQuizLogs.forEach(log => {
+                const logHTML = `
+                    <div class="bg-red-500/5 border border-red-500/10 p-3 rounded-lg relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded font-bold">${log.compound} (${log.formula})</span>
+                                <h5 class="font-bold text-white text-xs mt-1.5"><i class="fa-solid fa-circle-exclamation mr-1 text-red-400"></i> ${log.questionType} 실수</h5>
+                            </div>
+                            <div class="text-right text-[11px] orbitron font-bold">
+                                <span class="text-red-400">입력: ${log.userAns}</span> <span class="text-gray-500">/</span> <span class="text-green-400">정답: ${log.correctAns}</span>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-2 leading-relaxed">
+                            <strong class="text-purple-300">원인 진단:</strong> ${log.cause}
+                        </p>
+                    </div>
+                `;
+                reportContainer.innerHTML += logHTML;
+            });
+
+            // Analyze overall tendencies and make customized AI guidelines
+            let q1Wrong = incorrectQuizLogs.filter(l => l.questionType.includes("분자 개수")).length;
+            let q2Wrong = incorrectQuizLogs.filter(l => l.questionType.includes("원자 수")).length;
+            let q3Wrong = incorrectQuizLogs.filter(l => l.questionType.includes("질량비")).length;
+
+            let diagnosis = "<strong>종합 맞춤 처방 조언:</strong> ";
+            if (q3Wrong > q2Wrong && q3Wrong >= q1Wrong) {
+                diagnosis += "특히 각 성분의 <u>질량 성분 비율</u>에서 연산 실수가 많습니다. 원자 수의 고유 개수비에 원자의 원자량(H=1, C=12, N=14, O=16)을 바르게 곱한 뒤 약분하여 가장 단순한 비율로 표기하는 연습을 다지세요.";
+            } else if (q1Wrong >= q2Wrong) {
+                diagnosis += "주어진 한정된 원자 개수 조건에서 <u> 화합물 구성 </u>을 하는 부분이 취약합니다. 낱개 개수가 아무리 많아도 화합물의 화학식 비율 상 부족한 원자가 생긴다면 더 이상 분자를 이룰 수 없다는 한계를 명심하세요.";
+            } else {
+                diagnosis += "분자의 원자 배열과 개수 비율을 헷갈리고 있습니다. 물 분자($H_2O$)는 수소와 산소가 2:1, 암모니아 분자($NH_3$)는 질소와 수소가 1:3으로 결합한다는 원소 기호 아래 정적 배수비를 철저히 파악하는 것이 우선입니다.";
+            }
+            recommendationBox.innerHTML = diagnosis;
+        }
+
+        function startGame() {
+            AudioEngine.init();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('gameplay-header').classList.remove('hidden');
+            
+            score = 0;
+            elapsedFrame = 0;
+            collisionsCount = 0;
+            stageIndex = 0;
+            speedMultiplier = 1.0; // 속도 가속 초기화
+            incorrectQuizLogs = []; // 오답 리스트 초기화
+            isStageActive = false;
+            activePotion = null;
+            asteroids = [];
+            player.bullets = [];
+
+            isGamePaused = false;
+            document.getElementById('score-display').innerText = score;
+            document.getElementById('stage-display').innerText = "물약 탐색 중...";
+
+            updateGame();
+        }
+
+        function endGame(isCleared) {
+            isGamePaused = true;
+            cancelAnimationFrame(gameLoopId);
+
+            document.getElementById('gameplay-header').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+
+            const title = document.getElementById('end-title');
+            const sub = document.getElementById('end-subtitle');
+
+            if (isCleared) {
+                title.innerText = "MISSION COMPLETE!";
+                title.className = "orbitron text-3xl sm:text-4xl font-black mb-1 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 glow-green";
+                sub.innerText = "축하합니다! 5개의 핵심 화합물의 일정성분비 과학 퀴즈와 우주 비행을 성공적으로 완료하였습니다.";
+            } else {
+                title.innerText = "GAME OVER";
+                title.className = "orbitron text-3xl sm:text-4xl font-black mb-1 text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-600 glow-red";
+                sub.innerText = "아쉽게도 점수가 소진되었습니다. 취약점을 확인하고 다시 한번 비행을 진행해 보세요.";
+            }
+
+            document.getElementById('final-score').innerText = `${score}점`;
+
+            const sec = Math.floor(elapsedFrame / 60);
+            const minStr = String(Math.floor(sec / 60)).padStart(2, '0');
+            const secStr = String(sec % 60).padStart(2, '0');
+            document.getElementById('final-time').innerText = `${minStr}:${secStr}`;
+            document.getElementById('final-collisions').innerText = `${collisionsCount}회`;
+
+            // 개인 정밀 오답 통계 피드백 리포트 카드 랜더링 작동
+            populateStudyReport();
+        }
+
+        // --- STEP 0: PRE-STUDY SCREEN TRANSITION ---
+        document.getElementById('btn-pre-accept').addEventListener('click', () => {
+            document.getElementById('pre-study-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        });
+
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-restart').addEventListener('click', startGame);
+    </script>
+</body>
+</html>
